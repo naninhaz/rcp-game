@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Decida em 10 Segundos — Simulador Ao Vivo</title>
+  <title>Decida em 20 Segundos — Simulador Ao Vivo</title>
   <style>
     :root {
       --bg: #f1f5f9;
@@ -645,7 +645,7 @@
   <div class="header">
     <div class="header-title">
       <span class="pulse-dot"></span>
-      DECIDA EM 10 SEGUNDOS
+      DECIDA EM 20 SEGUNDOS
     </div>
     <button class="projector-btn" onclick="openProjectorMode()">📺 Modo Telão</button>
   </div>
@@ -675,7 +675,7 @@
 
     <div class="rules-box">
       <div class="rule-item">⚡ <strong>8 cenários reais</strong> de Engasgo e RCP em adultos.</div>
-      <div class="rule-item">⏳ <strong>10 segundos</strong> por decisão — desempate pelo menor tempo médio.</div>
+      <div class="rule-item">⏳ <strong>20 segundos</strong> por decisão — desempate pelo menor tempo médio.</div>
     </div>
 
     <button class="btn btn-primary" onclick="startGame()">Entrar na Dinâmica</button>
@@ -685,7 +685,7 @@
   <div id="game-screen" class="screen">
     <div class="status-bar">
       <span id="question-counter">Cenário 1 de 8</span>
-      <span id="timer-display" class="timer-text">10.0s</span>
+      <span id="timer-display" class="timer-text">20.0s</span>
     </div>
     <div class="timer-track">
       <div id="timer-bar" class="timer-fill"></div>
@@ -764,8 +764,13 @@
 </div>
 
 <script>
-  
+  // =========================================================================
+  // COLE AQUI A URL DO SEU FIREBASE REALTIME DATABASE (sem barra "/" no final)
+  // Exemplo: "https://meu-projeto-default-rtdb.firebaseio.com"
+  // =========================================================================
   const FIREBASE_DB_URL = "https://simulador-rcp-3bd22-default-rtdb.firebaseio.com";
+
+  const QUESTION_DURATION = 20.0;
 
   const scenarios = [
     {
@@ -940,7 +945,7 @@
 
   let currentIdx = 0;
   let score = 0;
-  let timeLeft = 10.0;
+  let timeLeft = QUESTION_DURATION;
   let timerInterval = null;
   let questionStartTime = 0;
   let totalResponseTime = 0;
@@ -1035,13 +1040,13 @@
       optionsContainer.appendChild(btn);
     });
 
-    timeLeft = 10.0;
+    timeLeft = QUESTION_DURATION;
     questionStartTime = Date.now();
     updateTimerUI();
 
     timerInterval = setInterval(() => {
       const elapsed = (Date.now() - questionStartTime) / 1000;
-      timeLeft = Math.max(0, 10.0 - elapsed);
+      timeLeft = Math.max(0, QUESTION_DURATION - elapsed);
       updateTimerUI();
 
       if (timeLeft <= 0) {
@@ -1053,13 +1058,13 @@
 
   function updateTimerUI() {
     timerDisplay.textContent = `${timeLeft.toFixed(1)}s`;
-    const pct = (timeLeft / 10.0) * 100;
+    const pct = (timeLeft / QUESTION_DURATION) * 100;
     timerBar.style.width = `${pct}%`;
 
-    if (timeLeft <= 3.0) {
+    if (timeLeft <= 5.0) {
       timerDisplay.classList.add("urgent");
       timerBar.style.backgroundColor = "var(--accent)";
-    } else if (timeLeft <= 6.0) {
+    } else if (timeLeft <= 10.0) {
       timerDisplay.classList.remove("urgent");
       timerBar.style.backgroundColor = "var(--warning)";
     } else {
@@ -1070,7 +1075,7 @@
 
   function selectOption(selectedIndex) {
     clearInterval(timerInterval);
-    const elapsed = Math.min(10.0, (Date.now() - questionStartTime) / 1000);
+    const elapsed = Math.min(QUESTION_DURATION, (Date.now() - questionStartTime) / 1000);
     totalResponseTime += elapsed;
     answeredCount++;
 
@@ -1104,7 +1109,7 @@
   }
 
   function handleTimeout() {
-    totalResponseTime += 10.0;
+    totalResponseTime += QUESTION_DURATION;
     answeredCount++;
     triggerAnimation("shake");
 
@@ -1144,7 +1149,7 @@
     switchScreen(resultScreen);
     const total = scenarios.length;
     const pct = Math.round((score / total) * 100);
-    const avgNum = answeredCount > 0 ? (totalResponseTime / answeredCount) : 10.0;
+    const avgNum = answeredCount > 0 ? (totalResponseTime / answeredCount) : QUESTION_DURATION;
     const avgRounded = parseFloat(avgNum.toFixed(1));
 
     document.getElementById("result-player-name").textContent = `Resultado de ${currentPlayerName}`;
@@ -1176,7 +1181,6 @@
     await submitScoreToFirebase(currentPlayerName, score, total, avgRounded);
     fetchAndRenderRanking("result-ranking-list", "participant-count-result");
 
-    // Continua atualizando o ranking na tela do celular enquanto os outros colegas terminam
     pollingInterval = setInterval(() => {
       fetchAndRenderRanking("result-ranking-list", "participant-count-result");
     }, 3500);
@@ -1230,7 +1234,6 @@
         ...val
       }));
 
-      // Ordena por maior nota e depois menor tempo médio
       entries.sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return a.avgTime - b.avgTime;
