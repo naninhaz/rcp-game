@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decida em 10 Segundos — Simulador Ao Vivo</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --primary: #0f172a;
+      --accent: #e11d48;
+      --accent-soft: #ffe4e6;
+      --success: #059669;
+      --success-soft: #d1fae5;
+      --warning: #d97706;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 660px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.12);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .shake {
+      animation: shakeAnim 0.42s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shakeAnim {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    .pop-success {
+      animation: popAnim 0.35s ease-out;
+    }
+
+    @keyframes popAnim {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.015); }
+      100% { transform: scale(1); }
+    }
+
+    .header {
+      background: var(--primary);
+      color: #ffffff;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulseDot 1.5s infinite;
+    }
+
+    @keyframes pulseDot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(225, 29, 72, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+    }
+
+    .projector-btn {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .projector-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .screen {
+      padding: 26px 24px;
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+      animation: slideUpFade 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .hero-icon {
+      width: 60px;
+      height: 60px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.9rem;
+      flex-shrink: 0;
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .name-input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+
+    .name-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .rules-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.2s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #be123c;
+    }
+
+    .btn-dark {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text-main);
+      margin-top: 10px;
+    }
+
+    /* Ranking */
+    .ranking-section {
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+    }
+
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .ranking-title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-pill {
+      background: var(--success-soft);
+      color: var(--success);
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .ranking-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      animation: slideUpFade 0.25s ease-out;
+    }
+
+    .ranking-row.highlight {
+      background: #fffbeb;
+      border-color: #fde68a;
+      font-weight: 700;
+    }
+
+    .rank-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rank-pos {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rank-pos.top-1 { background: #fef08a; color: #854d0e; }
+    .rank-pos.top-2 { background: #e2e8f0; color: #334155; }
+    .rank-pos.top-3 { background: #fed7aa; color: #9a3412; }
+
+    .rank-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rank-score {
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .rank-time {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .empty-rank {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      padding: 18px;
+      background: #f8fafc;
+      border-radius: 10px;
+    }
+
+    .reset-link {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* Jogo */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .timer-text {
+      font-variant-numeric: tabular-nums;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .timer-text.urgent {
+      color: var(--accent);
+      animation: urgentPulse 0.45s infinite alternate;
+    }
+
+    @keyframes urgentPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.16); }
+    }
+
+    .timer-track {
+      width: 100%;
+      height: 9px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .timer-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--success);
+      transition: width 0.08s linear, background-color 0.2s ease;
+    }
+
+    .scenario-tag {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .scenario-text {
+      font-size: 1.12rem;
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .option-btn {
+      text-align: left;
+      background: #ffffff;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      opacity: 0;
+      animation: optionStagger 0.3s ease-out forwards;
+    }
+
+    .option-btn:nth-child(1) { animation-delay: 0.05s; }
+    .option-btn:nth-child(2) { animation-delay: 0.12s; }
+    .option-btn:nth-child(3) { animation-delay: 0.19s; }
+
+    @keyframes optionStagger {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: #f8fafc;
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-letter {
+      background: #f1f5f9;
+      color: var(--primary);
+      font-weight: 800;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+    }
+
+    .option-btn.correct {
+      border-color: var(--success);
+      background: var(--success-soft);
+      color: #064e3b;
+    }
+
+    .option-btn.correct .option-letter {
+      background: var(--success);
+      color: #ffffff;
+    }
+
+    .option-btn.wrong {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: #881337;
+    }
+
+    .option-btn.wrong .option-letter {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .feedback-box {
+      margin-top: 18px;
+      padding: 15px 18px;
+      border-radius: 12px;
+      display: none;
+      line-height: 1.5;
+      font-size: 0.92rem;
+    }
+
+    .feedback-box.show {
+      display: block;
+      animation: slideUpFade 0.25s ease-out;
+    }
+
+    .feedback-box.success {
+      background: #ecfdf5;
+      border-left: 4px solid var(--success);
+      color: #065f46;
+    }
+
+    .feedback-box.error {
+      background: #fff1f2;
+      border-left: 4px solid var(--accent);
+      color: #9f1239;
+    }
+
+    .feedback-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+      display: block;
+      font-size: 0.96rem;
+    }
+
+    .next-btn-wrap {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .next-btn-wrap.show {
+      display: block;
+    }
+
+    /* Tela Final */
+    .score-card {
+      text-align: center;
+      padding: 20px 16px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .player-greeting {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .score-number {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .rank-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-item {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .config-warning {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div id="app-card" class="app-container">
+  <div class="header">
+    <div class="header-title">
+      <span class="pulse-dot"></span>
+      DECIDA EM 10 SEGUNDOS
+    </div>
+    <button class="projector-btn" onclick="openProjectorMode()">📺 Modo Telão</button>
+  </div>
+
+  <!-- TELA INICIAL (CELULAR DOS PARTICIPANTES) -->
+  <div id="start-screen" class="screen active">
+    <div id="db-warning" class="config-warning">
+      ⚠️ <strong>Atenção:</strong> Cole a URL do seu Firebase Realtime Database na variável <code>FIREBASE_DB_URL</code> do código para sincronizar os celulares em tempo real.
+    </div>
+
+    <div class="hero-top">
+      <div class="hero-icon">🚑</div>
+      <div>
+        <h1>Simulador de Emergências</h1>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">Engasgo e Parada Cardiorrespiratória</p>
+      </div>
+    </div>
+
+    <p class="subtitle">
+      Digite seu nome abaixo e responda aos 8 cenários clínicos antes que o tempo acabe. Seu resultado aparecerá ao vivo no telão!
+    </p>
+
+    <div class="input-group">
+      <label class="input-label" for="player-name">Seu nome completo ou apelido:</label>
+      <input type="text" id="player-name" class="name-input" placeholder="Ex.: Ana Paula" maxlength="25" required />
+    </div>
+
+    <div class="rules-box">
+      <div class="rule-item">⚡ <strong>8 cenários reais</strong> de Engasgo e RCP em adultos.</div>
+      <div class="rule-item">⏳ <strong>10 segundos</strong> por decisão — desempate pelo menor tempo médio.</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startGame()">Entrar na Dinâmica</button>
+  </div>
+
+  <!-- TELA DO JOGO -->
+  <div id="game-screen" class="screen">
+    <div class="status-bar">
+      <span id="question-counter">Cenário 1 de 8</span>
+      <span id="timer-display" class="timer-text">10.0s</span>
+    </div>
+    <div class="timer-track">
+      <div id="timer-bar" class="timer-fill"></div>
+    </div>
+
+    <span id="scenario-tag" class="scenario-tag">Categoria</span>
+    <div id="scenario-text" class="scenario-text">Texto do cenário...</div>
+
+    <div id="options-container" class="options-list"></div>
+
+    <div id="feedback-box" class="feedback-box">
+      <span id="feedback-title" class="feedback-title"></span>
+      <span id="feedback-desc"></span>
+    </div>
+
+    <div id="next-wrap" class="next-btn-wrap">
+      <button id="next-btn" class="btn btn-dark" onclick="nextQuestion()">Próximo Cenário →</button>
+    </div>
+  </div>
+
+  <!-- TELA FINAL DO PARTICIPANTE -->
+  <div id="result-screen" class="screen">
+    <div class="score-card">
+      <div id="result-player-name" class="player-greeting">Resultado</div>
+      <div id="final-score" class="score-number">0/8</div>
+      <div id="rank-badge" class="rank-badge">Classificação</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div id="avg-time" class="stat-val">0.0s</div>
+        <div class="stat-desc">Tempo médio</div>
+      </div>
+      <div class="stat-item">
+        <div id="accuracy-pct" class="stat-val">0%</div>
+        <div class="stat-desc">Aproveitamento</div>
+      </div>
+    </div>
+
+    <p id="final-message" class="subtitle" style="text-align: center; font-size: 0.9rem; margin-bottom: 14px;"></p>
+
+    <div class="ranking-section" style="margin-top: 10px;">
+      <div class="ranking-header">
+        <span class="ranking-title">🏆 Ranking Geral da Sala <span class="live-pill">Ao Vivo</span></span>
+        <span id="participant-count-result" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">0 participantes</span>
+      </div>
+      <div id="result-ranking-list" class="ranking-list"></div>
+    </div>
+
+    <button class="btn btn-outline" onclick="goHome()">Voltar ao Início</button>
+  </div>
+
+  <!-- MODO TELÃO / APRESENTAÇÃO (RANKING AO VIVO) -->
+  <div id="projector-screen" class="screen">
+    <div class="hero-top" style="margin-bottom: 10px;">
+      <div class="hero-icon" style="width: 50px; height: 50px; font-size: 1.5rem;">🏆</div>
+      <div>
+        <h1 style="font-size: 1.35rem;">Placar Geral da Dinâmica</h1>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Atualização automática em tempo real conforme a turma finaliza</p>
+      </div>
+    </div>
+
+    <div class="ranking-section" style="border-top: none; padding-top: 8px; margin-top: 8px;">
+      <div class="ranking-header">
+        <span class="ranking-title">Classificação <span class="live-pill">Sincronizado</span></span>
+        <span id="participant-count-projector" style="font-size: 0.85rem; font-weight: 800; color: var(--primary);">0 participantes</span>
+      </div>
+      <div id="projector-ranking-list" class="ranking-list" style="max-height: 430px;"></div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px;">
+      <button class="reset-link" onclick="clearRemoteRanking()">Zerar placar da turma (Nova rodada)</button>
+      <button class="btn btn-dark" style="width: auto; padding: 10px 18px; font-size: 0.88rem;" onclick="goHome()">Sair do Telão</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  
+  const FIREBASE_DB_URL = "https://simulador-rcp-3bd22-default-rtdb.firebaseio.com";
+
+  const scenarios = [
+    {
+      tag: "Engasgo • Avaliação Inicial",
+      text: "Almoço de domingo: seu tio começa a tossir com muita força após comer um pedaço de carne. Ele ainda consegue respirar entre as tosses e faz som ao tentar falar. O que você faz?",
+      options: [
+        {
+          text: "Incentivo ele a continuar tossindo com força e fico observando de perto.",
+          correct: true,
+          feedback: "Conduta ideal! Na obstrução leve (passagem parcial de ar), a tosse espontânea é o mecanismo mais eficaz para expelir o corpo estranho."
+        },
+        {
+          text: "Dou um copo de água imediatamente para ajudar a descer o alimento.",
+          correct: false,
+          feedback: "Risco grave! Oferecer líquidos durante um engasgo pode causar broncoaspiração e transformar uma obstrução parcial em bloqueio total."
+        },
+        {
+          text: "Inicio imediatamente a Manobra de Heimlich com compressões abdominais.",
+          correct: false,
+          feedback: "Conduta prematura. Enquanto há tosse efetiva e passagem de ar, não se realiza Heimlich para não interferir no reflexo natural de expulsão."
+        }
+      ]
+    },
+    {
+      tag: "Engasgo Grave • Adulto",
+      text: "Em um restaurante, um homem levanta subitamente da mesa levando as duas mãos ao pescoço (sinal universal). Ele está com o rosto arroxeado e não emite nenhum som ou tosse. Qual a ação imediata?",
+      options: [
+        {
+          text: "Abro a boca dele e tento puxar o alimento com o dedo indicador.",
+          correct: false,
+          feedback: "Erro crítico! A varredura digital às cegas pode empurrar o objeto ainda mais fundo na via aérea e causar edema/lesão."
+        },
+        {
+          text: "Peço para alguém ligar 192 e inicio compressões abdominais (Heimlich) 2 dedos acima do umbigo, para dentro e para cima.",
+          correct: true,
+          feedback: "Exato! Obstrução total exige ação imediata: acionar o SAMU e aplicar compressões abdominais em 'J' até desobstruir ou a vítima perder a consciência."
+        },
+        {
+          text: "Peço para ele levantar os braços acima da cabeça e respiro fundo junto com ele.",
+          correct: false,
+          feedback: "Mito perigoso. Levantar os braços não gera pressão intratorácica suficiente para deslocar um objeto impactado na via aérea."
+        }
+      ]
+    },
+    {
+      tag: "Autodesengasgo",
+      text: "Você está sozinho em casa jantando, engasga totalmente com um pedaço de pão e não consegue falar nem tossir. Não há ninguém por perto. Como agir?",
+      options: [
+        {
+          text: "Deito de barriga para baixo no chão e aguardo a tontura passar.",
+          correct: false,
+          feedback: "Perigo fatal. Deitar passivamente sem gerar pressão abdominal levará à hipóxia e perda de consciência em poucos minutos."
+        },
+        {
+          text: "Bebo água direto da torneira tentando engolir com força.",
+          correct: false,
+          feedback: "A água não passa pela via aérea obstruída e aumenta o risco de afogamento/aspiração."
+        },
+        {
+          text: "Apoio a região acima do umbigo no encosto firme de uma cadeira e projeto o peso do corpo para dentro e para cima.",
+          correct: true,
+          feedback: "Perfeito! O encosto de uma cadeira firme ou borda de mesa substitui as mãos do socorrista para gerar pressão subdiafragmática."
+        }
+      ]
+    },
+    {
+      tag: "Evolução do Engasgo",
+      text: "Durante a Manobra de Heimlich, a vítima engasgada perde a consciência e desmaia nos seus braços. Qual deve ser o próximo passo imediato?",
+      options: [
+        {
+          text: "Deito a vítima com cuidado no chão rígido, confirmo que o 192 foi chamado e inicio RCP (compressões torácicas).",
+          correct: true,
+          feedback: "Correto! Quando a vítima de engasgo fica inconsciente, as compressões torácicas da RCP geram pressão para tentar expelir o objeto e mantêm a circulação."
+        },
+        {
+          text: "Deito a vítima de lado (posição lateral de segurança) e espero o SAMU chegar.",
+          correct: false,
+          feedback: "Erro grave! Uma vítima inconsciente por obstrução de via aérea entrará rapidamente em parada cardiorrespiratória e precisa de compressões imediatas."
+        },
+        {
+          text: "Continuo fazendo compressões abdominais com a pessoa caída no chão.",
+          correct: false,
+          feedback: "Protocolo desatualizado. Em vítimas inconscientes no chão, a prioridade absoluta é iniciar o protocolo de RCP."
+        }
+      ]
+    },
+    {
+      tag: "Identificação de PCR",
+      text: "Um colega de trabalho cai subitamente no corredor. O local é seguro, ele não responde ao chamado e, ao observar o tórax por 10 segundos, você nota apenas movimentos respiratórios lentos e ofegantes (gasping). O que isso significa?",
+      options: [
+        {
+          text: "Ele está apenas desmaiado e voltando a respirar sozinho; devo abaná-lo.",
+          correct: false,
+          feedback: "Armadilha clássica! O gasping (respiração agônica) NÃO é respiração normal — é um reflexo cerebral de parada cardíaca."
+        },
+        {
+          text: "É uma Parada Cardiorrespiratória! Devo acionar 192/DEA e iniciar compressões torácicas imediatamente.",
+          correct: true,
+          feedback: "Excelente leitura clínica! Adulto que não responde e não respira normalmente (ou apenas gaspeia) deve ser tratado imediatamente como PCR."
+        },
+        {
+          text: "Coloco um travesseiro ou casaco dobrado embaixo da cabeça dele para melhorar a respiração.",
+          correct: false,
+          feedback: "Elevar a cabeça flexiona o pescoço, fecha ainda mais a via aérea e atrasa o início das compressões torácicas."
+        }
+      ]
+    },
+    {
+      tag: "Técnica da RCP",
+      text: "Você está realizando compressões torácicas em um adulto no chão enquanto aguarda o SAMU. Qual é o padrão técnico correto para manter a perfusão cerebral?",
+      options: [
+        {
+          text: "Comprimir o centro do peito afundando cerca de 5 cm, no ritmo de 100 a 120 compressões por minuto, deixando o tórax retornar totalmente.",
+          correct: true,
+          feedback: "Na mosca! Profundidade de 5 cm, frequência de 100–120/min e retorno total do tórax garantem o enchimento cardíaco entre cada compressão."
+        },
+        {
+          text: "Fazer 15 compressões lentas e parar a cada 30 segundos para checar o pulso no pescoço.",
+          correct: false,
+          feedback: "Interrupções frequentes derrubam a pressão de perfusão coronariana. Leigos não devem checar pulso nem interromper as compressões."
+        },
+        {
+          text: "Comprimir com os cotovelos levemente dobrados para não cansar rápido.",
+          correct: false,
+          feedback: "Dobrar os cotovelos reduz a força aplicada e impede atingir os 5 cm de profundidade necessários. Use o peso do tronco com braços esticados."
+        }
+      ]
+    },
+    {
+      tag: "Superfície de Atendimento",
+      text: "Você encontra um idoso em parada cardiorrespiratória deitado em um colchão macio de cama de casal. Você está sozinho. O que fazer antes de comprimir?",
+      options: [
+        {
+          text: "Subo na cama e inicio as compressões ali mesmo para não perder 5 segundos.",
+          correct: false,
+          feedback: "Ineficaz! O colchão absorve a força do empurrão e impede que o tórax seja comprimido contra a coluna vertebral."
+        },
+        {
+          text: "Puxo a vítima cuidadosamente para o chão rígido e plano, ligo 192 no viva-voz e inicio as compressões.",
+          correct: true,
+          feedback: "Correto! A RCP exige uma superfície rígida e plana para que a compressão do esterno contra a coluna bombeie o sangue."
+        },
+        {
+          text: "Fico no telefone aguardando a equipe do SAMU chegar para movê-lo com segurança.",
+          correct: false,
+          feedback: "A cada minuto sem RCP, a chance de sobrevivência cai cerca de 7% a 10%. O socorrista no local precisa agir imediatamente."
+        }
+      ]
+    },
+    {
+      tag: "Uso do DEA",
+      text: "Durante uma RCP no shopping, um segurança chega trazendo o Desfibrilador Externo Automático (DEA). Você é leigo. Qual a conduta correta?",
+      options: [
+        {
+          text: "Não uso o aparelho porque apenas médicos ou enfermeiros podem operar um desfibrilador.",
+          correct: false,
+          feedback: "Mito! O DEA foi projetado justamente para qualquer cidadão usar: ele analisa o ritmo sozinho e só libera choque se for indicado."
+        },
+        {
+          text: "Continuo fazendo massagem sem parar e mando guardar o DEA para quando o SAMU chegar.",
+          correct: false,
+          feedback: "A desfibrilação precoce é o único tratamento capaz de reverter ritmos chocáveis como Fibrilação Ventricular."
+        },
+        {
+          text: "Ligo o DEA imediatamente, colo as pás adesivas no tórax nu conforme o desenho e sigo os comandos de voz do aparelho.",
+          correct: true,
+          feedback: "Perfeito! O DEA guia todo o processo por voz e avisa o momento exato de afastar todos para análise ou choque."
+        }
+      ]
+    }
+  ];
+
+  let currentIdx = 0;
+  let score = 0;
+  let timeLeft = 10.0;
+  let timerInterval = null;
+  let questionStartTime = 0;
+  let totalResponseTime = 0;
+  let answeredCount = 0;
+  let currentPlayerName = "";
+  let myEntryKey = null;
+  let pollingInterval = null;
+
+  const appCard = document.getElementById("app-card");
+  const startScreen = document.getElementById("start-screen");
+  const gameScreen = document.getElementById("game-screen");
+  const resultScreen = document.getElementById("result-screen");
+  const projectorScreen = document.getElementById("projector-screen");
+  const playerNameInput = document.getElementById("player-name");
+
+  const questionCounter = document.getElementById("question-counter");
+  const timerDisplay = document.getElementById("timer-display");
+  const timerBar = document.getElementById("timer-bar");
+  const scenarioTag = document.getElementById("scenario-tag");
+  const scenarioText = document.getElementById("scenario-text");
+  const optionsContainer = document.getElementById("options-container");
+  const feedbackBox = document.getElementById("feedback-box");
+  const feedbackTitle = document.getElementById("feedback-title");
+  const feedbackDesc = document.getElementById("feedback-desc");
+  const nextWrap = document.getElementById("next-wrap");
+  const nextBtn = document.getElementById("next-btn");
+
+  const isFirebaseConfigured = () => FIREBASE_DB_URL && FIREBASE_DB_URL.startsWith("https://");
+
+  if (!isFirebaseConfigured()) {
+    document.getElementById("db-warning").style.display = "block";
+  }
+
+  function switchScreen(screen) {
+    clearInterval(pollingInterval);
+    [startScreen, gameScreen, resultScreen, projectorScreen].forEach(s => s.classList.remove("active"));
+    screen.classList.add("active");
+  }
+
+  function triggerAnimation(className) {
+    appCard.classList.remove("shake", "pop-success");
+    void appCard.offsetWidth;
+    appCard.classList.add(className);
+  }
+
+  function goHome() {
+    switchScreen(startScreen);
+  }
+
+  function openProjectorMode() {
+    switchScreen(projectorScreen);
+    fetchAndRenderRanking("projector-ranking-list", "participant-count-projector");
+    pollingInterval = setInterval(() => {
+      fetchAndRenderRanking("projector-ranking-list", "participant-count-projector");
+    }, 3000);
+  }
+
+  function startGame() {
+    const rawName = playerNameInput.value.trim();
+    if (!rawName) {
+      playerNameInput.focus();
+      triggerAnimation("shake");
+      return;
+    }
+    currentPlayerName = rawName;
+    currentIdx = 0;
+    score = 0;
+    totalResponseTime = 0;
+    answeredCount = 0;
+    switchScreen(gameScreen);
+    loadScenario();
+  }
+
+  function loadScenario() {
+    clearInterval(timerInterval);
+    const current = scenarios[currentIdx];
+
+    questionCounter.textContent = `Cenário ${currentIdx + 1} de ${scenarios.length}`;
+    scenarioTag.textContent = current.tag;
+    scenarioText.textContent = current.text;
+
+    feedbackBox.className = "feedback-box";
+    nextWrap.className = "next-btn-wrap";
+    optionsContainer.innerHTML = "";
+
+    const letters = ["A", "B", "C"];
+    current.options.forEach((opt, index) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<span class="option-letter">${letters[index]}</span><span>${opt.text}</span>`;
+      btn.onclick = () => selectOption(index);
+      optionsContainer.appendChild(btn);
+    });
+
+    timeLeft = 10.0;
+    questionStartTime = Date.now();
+    updateTimerUI();
+
+    timerInterval = setInterval(() => {
+      const elapsed = (Date.now() - questionStartTime) / 1000;
+      timeLeft = Math.max(0, 10.0 - elapsed);
+      updateTimerUI();
+
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        handleTimeout();
+      }
+    }, 50);
+  }
+
+  function updateTimerUI() {
+    timerDisplay.textContent = `${timeLeft.toFixed(1)}s`;
+    const pct = (timeLeft / 10.0) * 100;
+    timerBar.style.width = `${pct}%`;
+
+    if (timeLeft <= 3.0) {
+      timerDisplay.classList.add("urgent");
+      timerBar.style.backgroundColor = "var(--accent)";
+    } else if (timeLeft <= 6.0) {
+      timerDisplay.classList.remove("urgent");
+      timerBar.style.backgroundColor = "var(--warning)";
+    } else {
+      timerDisplay.classList.remove("urgent");
+      timerBar.style.backgroundColor = "var(--success)";
+    }
+  }
+
+  function selectOption(selectedIndex) {
+    clearInterval(timerInterval);
+    const elapsed = Math.min(10.0, (Date.now() - questionStartTime) / 1000);
+    totalResponseTime += elapsed;
+    answeredCount++;
+
+    const current = scenarios[currentIdx];
+    const buttons = optionsContainer.querySelectorAll(".option-btn");
+
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (current.options[idx].correct) {
+        btn.classList.add("correct");
+      } else if (idx === selectedIndex) {
+        btn.classList.add("wrong");
+      }
+    });
+
+    const chosen = current.options[selectedIndex];
+    if (chosen.correct) {
+      score++;
+      triggerAnimation("pop-success");
+      feedbackBox.className = "feedback-box show success";
+      feedbackTitle.textContent = `✅ Decisão Correta! (${elapsed.toFixed(1)}s)`;
+      feedbackDesc.textContent = chosen.feedback;
+    } else {
+      triggerAnimation("shake");
+      feedbackBox.className = "feedback-box show error";
+      feedbackTitle.textContent = "⚠️ Conduta Inadequada!";
+      feedbackDesc.textContent = chosen.feedback;
+    }
+
+    prepareNextButton();
+  }
+
+  function handleTimeout() {
+    totalResponseTime += 10.0;
+    answeredCount++;
+    triggerAnimation("shake");
+
+    const current = scenarios[currentIdx];
+    const buttons = optionsContainer.querySelectorAll(".option-btn");
+
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (current.options[idx].correct) {
+        btn.classList.add("correct");
+      }
+    });
+
+    const correctOpt = current.options.find(o => o.correct);
+    feedbackBox.className = "feedback-box show error";
+    feedbackTitle.textContent = "⏳ Tempo Esgotado!";
+    feedbackDesc.textContent = `Na emergência real, a hesitação custa vidas. A conduta esperada era: ${correctOpt.feedback}`;
+
+    prepareNextButton();
+  }
+
+  function prepareNextButton() {
+    nextBtn.textContent = currentIdx < scenarios.length - 1 ? "Próximo Cenário →" : "Enviar e Ver Ranking";
+    nextWrap.className = "next-btn-wrap show";
+  }
+
+  function nextQuestion() {
+    currentIdx++;
+    if (currentIdx < scenarios.length) {
+      loadScenario();
+    } else {
+      showResults();
+    }
+  }
+
+  async function showResults() {
+    switchScreen(resultScreen);
+    const total = scenarios.length;
+    const pct = Math.round((score / total) * 100);
+    const avgNum = answeredCount > 0 ? (totalResponseTime / answeredCount) : 10.0;
+    const avgRounded = parseFloat(avgNum.toFixed(1));
+
+    document.getElementById("result-player-name").textContent = `Resultado de ${currentPlayerName}`;
+    document.getElementById("final-score").textContent = `${score}/${total}`;
+    document.getElementById("avg-time").textContent = `${avgRounded.toFixed(1)}s`;
+    document.getElementById("accuracy-pct").textContent = `${pct}%`;
+
+    const rankBadge = document.getElementById("rank-badge");
+    const finalMessage = document.getElementById("final-message");
+
+    if (score >= 7) {
+      rankBadge.textContent = "🏆 Socorrista Preparado";
+      rankBadge.style.background = "var(--success-soft)";
+      rankBadge.style.color = "#065f46";
+      finalMessage.textContent = "Excelente! Você demonstrou agilidade e segurança clínica para agir antes do SAMU chegar.";
+      launchConfetti();
+    } else if (score >= 4) {
+      rankBadge.textContent = "⚡ Em Treinamento";
+      rankBadge.style.background = "#fef3c7";
+      rankBadge.style.color = "#92400e";
+      finalMessage.textContent = "Bom desempenho, mas alguns atrasos ou mitos ainda podem comprometer o atendimento.";
+    } else {
+      rankBadge.textContent = "🚨 Alerta de Risco";
+      rankBadge.style.background = "var(--accent-soft)";
+      rankBadge.style.color = "#9f1239";
+      finalMessage.textContent = "Sob pressão, condutas intuitivas podem agravar o quadro. Acompanhe o placar da turma abaixo!";
+    }
+
+    await submitScoreToFirebase(currentPlayerName, score, total, avgRounded);
+    fetchAndRenderRanking("result-ranking-list", "participant-count-result");
+
+    // Continua atualizando o ranking na tela do celular enquanto os outros colegas terminam
+    pollingInterval = setInterval(() => {
+      fetchAndRenderRanking("result-ranking-list", "participant-count-result");
+    }, 3500);
+  }
+
+  // --- Integração com Firebase Realtime Database (REST API) ---
+  async function submitScoreToFirebase(name, scoreVal, totalVal, avgTimeVal) {
+    if (!isFirebaseConfigured()) return;
+    try {
+      const response = await fetch(`${FIREBASE_DB_URL}/ranking.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          score: scoreVal,
+          total: totalVal,
+          avgTime: avgTimeVal,
+          timestamp: Date.now()
+        })
+      });
+      const data = await response.json();
+      if (data && data.name) {
+        myEntryKey = data.name;
+      }
+    } catch (err) {
+      console.error("Erro ao enviar pontuação:", err);
+    }
+  }
+
+  async function fetchAndRenderRanking(listId, countId) {
+    const container = document.getElementById(listId);
+    const countLabel = document.getElementById(countId);
+
+    if (!isFirebaseConfigured()) {
+      container.innerHTML = `<div class="empty-rank">Configure a URL do Firebase no código para ver o ranking ao vivo.</div>`;
+      return;
+    }
+
+    try {
+      const response = await fetch(`${FIREBASE_DB_URL}/ranking.json`);
+      const data = await response.json();
+
+      if (!data) {
+        countLabel.textContent = "0 participantes";
+        container.innerHTML = `<div class="empty-rank">Aguardando os primeiros participantes finalizarem...</div>`;
+        return;
+      }
+
+      const entries = Object.entries(data).map(([key, val]) => ({
+        key,
+        ...val
+      }));
+
+      // Ordena por maior nota e depois menor tempo médio
+      entries.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.avgTime - b.avgTime;
+      });
+
+      countLabel.textContent = `${entries.length} ${entries.length === 1 ? "participante" : "participantes"}`;
+
+      container.innerHTML = entries.map((item, index) => {
+        const pos = index + 1;
+        let posClass = "";
+        let medal = `${pos}º`;
+        if (pos === 1) { posClass = "top-1"; medal = "🥇"; }
+        else if (pos === 2) { posClass = "top-2"; medal = "🥈"; }
+        else if (pos === 3) { posClass = "top-3"; medal = "🥉"; }
+
+        const isMe = item.key === myEntryKey ? "highlight" : "";
+
+        return `
+          <div class="ranking-row ${isMe}">
+            <div class="rank-left">
+              <span class="rank-pos ${posClass}">${medal}</span>
+              <span>${escapeHtml(item.name)}</span>
+            </div>
+            <div class="rank-right">
+              <span class="rank-time">⏱️ ${Number(item.avgTime).toFixed(1)}s</span>
+              <span class="rank-score">${item.score}/${item.total}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    } catch (err) {
+      container.innerHTML = `<div class="empty-rank">Erro de conexão ao carregar o placar.</div>`;
+    }
+  }
+
+  async function clearRemoteRanking() {
+    if (!isFirebaseConfigured()) return;
+    if (confirm("Isso vai apagar todos os resultados da turma no servidor para iniciar uma nova rodada. Confirmar?")) {
+      await fetch(`${FIREBASE_DB_URL}/ranking.json`, { method: "DELETE" });
+      myEntryKey = null;
+      fetchAndRenderRanking("projector-ranking-list", "participant-count-projector");
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  // --- Confetes ---
+  function launchConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ["#e11d48", "#059669", "#eab308", "#3b82f6", "#8b5cf6"];
+    const pieces = Array.from({ length: 90 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 9 + 5,
+      h: Math.random() * 5 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vy: Math.random() * 3 + 2,
+      vx: Math.random() * 2 - 1,
+      rot: Math.random() * 360,
+      vrot: Math.random() * 6 - 3
+    }));
+
+    let frames = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.y += p.vy;
+        p.x += p.vx;
+        p.rot += p.vrot;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      frames++;
+      if (frames < 160) {
+        requestAnimationFrame(draw);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    draw();
+  }
+</script>
+
+</body>
+</html>
